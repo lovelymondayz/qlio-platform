@@ -11,3 +11,4 @@ backend/qlio
 .idea/
 backups/
 *.sql.gz
+*.tsbuildinfo

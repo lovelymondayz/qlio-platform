@@ -121,7 +121,41 @@ func NowServing(ctx context.Context, bizID int64, date string) string {
 	return s
 }
 
+// Today returns the current date in UTC. Prefer BizToday — a business in
+// Asia/Jakarta (+7) rolls over to the next day 7 hours before UTC does, so
+// using this for queue lookups makes the queue appear empty after 17:00 UTC.
 func Today() string { return time.Now().Format("2006-01-02") }
+
+// localToday returns today's date in the given IANA timezone, falling back to
+// UTC when the name is empty or unknown.
+func localToday(tz string) string {
+	if tz == "" {
+		return time.Now().Format("2006-01-02")
+	}
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		return time.Now().Format("2006-01-02")
+	}
+	return time.Now().In(loc).Format("2006-01-02")
+}
+
+// BizToday returns the current date in the business's own timezone. All queue
+// and ticket lookups must use this: tickets are stamped with the business-local
+// service_date at issue time, so any reader using a different clock will miss
+// them. Falls back to UTC only if the stored timezone is unparseable.
+func BizToday(ctx context.Context, bizID int64) string {
+	var tz string
+	if err := db.Pool.QueryRow(ctx,
+		`SELECT COALESCE(timezone,'UTC') FROM businesses WHERE id=$1`, bizID,
+	).Scan(&tz); err != nil || tz == "" {
+		return time.Now().Format("2006-01-02")
+	}
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		return time.Now().Format("2006-01-02")
+	}
+	return time.Now().In(loc).Format("2006-01-02")
+}
 
 // PushQueue notifies the business room that the queue changed.
 func PushQueue(bizID int64, evType string, payload interface{}) {

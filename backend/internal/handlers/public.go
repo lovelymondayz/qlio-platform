@@ -30,7 +30,8 @@ func PublicBusiness(c *gin.Context) {
 	}
 
 	svcs := listServices(c, b.ID, true)
-	today := Today()
+	// business-local date, not UTC — b.Timezone is already loaded above
+	today := localToday(b.Timezone)
 
 	var waiting int
 	db.Pool.QueryRow(c, `
@@ -96,19 +97,21 @@ func listSchedule(ctx context.Context, bizID int64) []models.ScheduleDay {
 // GET /api/public/b/:slug/slots?service_id=&date=YYYY-MM-DD
 func PublicSlots(c *gin.Context) {
 	slug := c.Param("slug")
-	dateStr := c.DefaultQuery("date", Today())
 	svcID := c.Query("service_id")
-
-	d, err := time.Parse("2006-01-02", dateStr)
-	if err != nil {
-		util.BadRequest(c, "Invalid date.")
-		return
-	}
 
 	var bizID int64
 	var tz string
 	if err := db.Pool.QueryRow(c, `SELECT id, timezone FROM businesses WHERE slug=$1 AND is_active=TRUE`, slug).Scan(&bizID, &tz); err != nil {
 		util.NotFound(c, "Business not found.")
+		return
+	}
+
+	// default to the business's local today, not the server's UTC today
+	dateStr := c.DefaultQuery("date", localToday(tz))
+
+	d, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		util.BadRequest(c, "Invalid date.")
 		return
 	}
 

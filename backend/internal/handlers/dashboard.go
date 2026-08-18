@@ -14,7 +14,7 @@ import (
 // GET /api/staff/dashboard
 func Dashboard(c *gin.Context) {
 	bizID := middleware.BizID(c)
-	date := c.DefaultQuery("date", Today())
+	date := c.DefaultQuery("date", BizToday(c, bizID))
 
 	var appts, waiting, serving, completed, cancelled, noshow, walkins int
 	db.Pool.QueryRow(c, `
@@ -66,7 +66,7 @@ func Dashboard(c *gin.Context) {
 // GET /api/staff/bookings?from=&to=&status=
 func ListBookings(c *gin.Context) {
 	bizID := middleware.BizID(c)
-	from := c.DefaultQuery("from", Today())
+	from := c.DefaultQuery("from", BizToday(c, bizID))
 	to := c.DefaultQuery("to", from)
 	status := c.Query("status")
 

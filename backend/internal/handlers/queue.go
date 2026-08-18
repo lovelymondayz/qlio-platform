@@ -16,7 +16,7 @@ import (
 // GET /api/staff/queue — live board for reception
 func QueueBoard(c *gin.Context) {
 	bizID := middleware.BizID(c)
-	date := c.DefaultQuery("date", Today())
+	date := c.DefaultQuery("date", BizToday(c, bizID))
 	c.JSON(http.StatusOK, queueSnapshot(c, bizID, date))
 }
 
@@ -31,7 +31,7 @@ func PublicDisplay(c *gin.Context) {
 		util.NotFound(c, "Business not found.")
 		return
 	}
-	snap := queueSnapshot(c, bizID, Today())
+	snap := queueSnapshot(c, bizID, BizToday(c, bizID))
 	c.JSON(http.StatusOK, gin.H{
 		"business_name": name, "counter_label": label, "queue": snap,
 	})
@@ -108,7 +108,7 @@ func CallNext(c *gin.Context) {
 	staffID := middleware.StaffID(c)
 	var r queueActionReq
 	c.ShouldBindJSON(&r)
-	date := Today()
+	date := BizToday(c, bizID)
 
 	tx, err := db.Pool.Begin(c)
 	if err != nil {

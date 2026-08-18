@@ -56,6 +56,8 @@ cp .env.example .env       # then fill in real secrets
 - [`docs/PLAN.md`](docs/PLAN.md) — what's built, what's next
 - [`docs/API.md`](docs/API.md) — endpoint reference
 - [`docs/BACKUP.md`](docs/BACKUP.md) — backup schedule, restore runbook, verified test
+- [`docs/DISASTER_RECOVERY.md`](docs/DISASTER_RECOVERY.md) — **rebuild the deployment from nothing**
+- [`docs/REBUILD_PROMPT.md`](docs/REBUILD_PROMPT.md) — **regenerate the codebase from scratch**
 
 ## The security model in one paragraph
 

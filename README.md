@@ -55,6 +55,7 @@ cp .env.example .env       # then fill in real secrets
 - [`docs/STRUCTURE.md`](docs/STRUCTURE.md) — file layout
 - [`docs/PLAN.md`](docs/PLAN.md) — what's built, what's next
 - [`docs/API.md`](docs/API.md) — endpoint reference
+- [`docs/BACKUP.md`](docs/BACKUP.md) — backup schedule, restore runbook, verified test
 
 ## The security model in one paragraph
 

@@ -9,3 +9,5 @@ backend/qlio
 /tmp/
 .vscode/
 .idea/
+backups/
+*.sql.gz

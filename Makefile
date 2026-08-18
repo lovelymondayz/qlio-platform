@@ -1,4 +1,4 @@
-.PHONY: help up down build rebuild logs ps health migrate psql clean dev-be dev-fe
+.PHONY: help up down build rebuild logs ps health migrate psql clean dev-be dev-fe backup restore backups
 
 help:
 	@echo "Qlio — make targets"
@@ -8,8 +8,20 @@ help:
 	@echo "  make logs      Tail all logs"
 	@echo "  make health    Check backend + frontend health"
 	@echo "  make psql      Open a psql shell"
+	@echo "  make backup    Dump the database now (gzipped, to backups/)"
+	@echo "  make backups   List available backups"
+	@echo "  make restore   Restore the newest backup (DESTRUCTIVE, prompts first)"
 	@echo "  make dev-be    Run backend locally (needs local DATABASE_URL)"
 	@echo "  make dev-fe    Run frontend dev server on :3007"
+
+backup:
+	./scripts/backup.sh
+
+backups:
+	./scripts/restore.sh --list
+
+restore:
+	./scripts/restore.sh
 
 up:
 	docker compose up -d

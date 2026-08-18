@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: qlio-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-qlio}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
+      POSTGRES_DB: ${DB_NAME:-qlio}
+    ports:
+      - "5438:5432"
+    volumes:
+      - qlio_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-qlio} -d ${DB_NAME:-qlio}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: qlio-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 8087
+      APP_ENV: production
+      DATABASE_URL: postgres://${DB_USER:-qlio}:${DB_PASSWORD}@db:5432/${DB_NAME:-qlio}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://qlio.arjism.com}
+    ports:
+      - "8087:8087"
+
+  frontend:
+    build: ./frontend
+    container_name: qlio-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3007:80"
+
+volumes:
+  qlio_pgdata:

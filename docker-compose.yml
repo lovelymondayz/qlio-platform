@@ -3,6 +3,11 @@ services:
     image: postgres:16-alpine
     container_name: qlio-db
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       POSTGRES_USER: ${DB_USER:-qlio}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
@@ -21,6 +26,11 @@ services:
     build: ./backend
     container_name: qlio-backend
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       db:
         condition: service_healthy
@@ -37,10 +47,23 @@ services:
     build: ./frontend
     container_name: qlio-frontend
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       - backend
     ports:
       - "3007:80"
+    healthcheck:
+      # 127.0.0.1, not localhost: inside this image localhost resolves to ::1
+      # while nginx binds IPv4-only (0.0.0.0:80), so an IPv6 dial is refused.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   qlio_pgdata:

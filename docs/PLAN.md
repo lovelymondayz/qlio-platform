@@ -1,6 +1,36 @@
 # Qlio Build Plan
 
-## Status: Phase 1–3 code complete, deployment in progress
+## Status: Phase 1–3 complete · deployed · live at https://qlio.arjism.com
+
+---
+
+## ✅ Runtime-verified against the live stack
+
+Not "compiles" — actually driven by real requests:
+
+| Flow | Result |
+|---|---|
+| Signup → auto-slug | `toko-budi`, JWT, owner role |
+| Slot generation | 24 available tomorrow; 0 today (past closing) — timezone-correct |
+| Book appointment | `QL-8L4KCU`, 24-char CSPRNG token |
+| Receipt, no auth | loads; phone masked `6281******890` |
+| Double-book same slot | `slot_taken` |
+| Find by phone alone | **rejected** — `both_required` |
+| Find by phone + code | resolves |
+| Scan (full URL payload) | `found:true`, `can_check_in:true` |
+| Check-in | issues ticket **`A001`** — §13 appointment→queue |
+| Replay same QR | **rejected** — `already_processed` |
+| Cross-tenant scan | **not-found** |
+| Cross-tenant check-in | **not-found** |
+| No JWT | `unauthorized` |
+| Call next | `A001` called, `A002` auto-flipped to `almost` |
+| Serving → transfer → complete | Counter 2, `completed:1` |
+| Recall / skip | `called` / `no_show` |
+| Empty queue | `queue_empty` — clean failure |
+| `avg_wait_min` | **7** — from real timestamps |
+| Audit log | all 7 staff actions attributed |
+| Public HTTPS | 6/6 requests HTTP 200 |
+| **Backup → wipe → restore** | 17 tables recovered, 0 errors, **owner login still works** |
 
 ---
 
@@ -53,25 +83,16 @@
 
 ---
 
-## 🔄 In Progress
+## 🔄 Remaining (non-blocking)
 
-- [ ] `docker compose build --no-cache` — running
-- [ ] `docker compose up -d` + health verification
-- [ ] nginx vhost `qlio.arjism.com` + Cloudflare **Full** SSL
-- [ ] **E2E runtime verification** (nothing is runtime-verified yet)
-- [ ] GitHub repo `lovelymondayz/qlio-platform` + push
-
-### E2E script to run
-
-```
-1. signup → 2. wizard (5 steps) → 3. open /:slug
-4. book appointment → 5. receipt loads, QR renders, PNG downloads
-6. staff scan (manual code) → 7. CHECK IN → ticket issued
-8. call next → 9. receipt shows IT'S YOUR TURN + counter
-10. complete → duration sample recorded
-11. kiosk walk-in → ticket issued immediately
-12. display screen shows now-serving
-```
+- [x] Docker build + deploy
+- [x] Public HTTPS via Cloudflare Tunnel
+- [x] E2E runtime verification
+- [x] GitHub repo + push
+- [x] Verified DB backup + restore + nightly cron
+- [ ] **Off-site backup copy** — dumps currently share the DB's disk (see docs/BACKUP.md)
+- [ ] Lazy-load `/biz/*` routes so customers don't download the staff app (643KB → ~350KB)
+- [ ] Move `rate_hits` cleanup out of the request path into a periodic job
 
 ---
 

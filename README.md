@@ -30,7 +30,7 @@ token URL with a QR code — *is* their temporary digital identity.
 | Frontend (nginx) | `3007` |
 | PostgreSQL | `5438` |
 
-Domain: **qlio.arjism.com** (Cloudflare **Full** SSL — Flexible breaks POST with 405)
+Domain: **qlio.arjism.com** via Cloudflare Tunnel → `http://localhost:3007` (origin is plain HTTP; the tunnel provides TLS, so no origin cert is needed)
 
 ---
 

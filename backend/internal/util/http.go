@@ -49,3 +49,14 @@ func ClientIP(c *gin.Context) string { return c.ClientIP() }
 
 // I64 formats an int64 without importing strconv at call sites.
 func I64(v int64) string { return strconv.FormatInt(v, 10) }
+
+// ParamID parses the :id route parameter as an int64, returning nil when it is
+// absent or not numeric. Audit metadata wants the id as a value, but a bad id
+// must not turn a successful request into a panic.
+func ParamID(c *gin.Context) *int64 {
+	v, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		return nil
+	}
+	return &v
+}

@@ -78,23 +78,30 @@ func main() {
 		st.GET("/dashboard", handlers.Dashboard)
 		st.GET("/bookings", handlers.ListBookings)
 		// Resolve a booking that has not been checked in yet, from the calendar:
-		// confirmed | no_show | cancelled. Receptionists need this (they answer
-		// the phone), so it sits with the general staff routes, not config.
-		st.PUT("/bookings/:id/status", handlers.BookingStatus)
-		st.GET("/analytics", handlers.Analytics)
+		// confirmed | no_show | cancelled | rescheduled. Front-desk work — a
+		// receptionist answers the phone — so it needs receptionist rank, but a
+		// plain 'staff' helper or a service provider must not silently move
+		// someone else's appointment.
+		st.PUT("/bookings/:id/status",
+			middleware.RequireRank(middleware.RankReceptionist), handlers.BookingStatus)
+		st.PUT("/bookings/:id/reschedule",
+			middleware.RequireRank(middleware.RankReceptionist), handlers.RescheduleBooking)
+		// Analytics is business performance data, not day-to-day operations.
+		st.GET("/analytics", middleware.RequireRank(middleware.RankManager), handlers.Analytics)
 
-		// scanning + check-in: any staff role
-		st.POST("/scan", handlers.Scan)
-		st.POST("/checkin", handlers.CheckIn)
+		// scanning + check-in: front desk and above
+		st.POST("/scan", middleware.RequireRank(middleware.RankProvider), handlers.Scan)
+		st.POST("/checkin", middleware.RequireRank(middleware.RankProvider), handlers.CheckIn)
 
-		// queue control
+		// queue control — every staff role can read the board and move the
+		// queue along; that is the whole job on a busy floor.
 		st.GET("/queue", handlers.QueueBoard)
 		st.POST("/queue/call-next", handlers.CallNext)
 		st.POST("/queue/:id/transfer", handlers.TransferTicket)
 		st.POST("/queue/:id/:action", handlers.QueueAction)
 
-		// business config: owner + manager
-		cfgGrp := st.Group("", middleware.RequireRole("owner", "manager"))
+		// business config: manager rank and above (owner passes by rank)
+		cfgGrp := st.Group("", middleware.RequireRank(middleware.RankManager))
 		{
 			cfgGrp.GET("/business", handlers.GetBusiness)
 			cfgGrp.PUT("/business", handlers.UpdateBusiness)
@@ -113,7 +120,10 @@ func main() {
 			cfgGrp.GET("/staff", handlers.ListStaff)
 			cfgGrp.POST("/staff", handlers.CreateStaff)
 			cfgGrp.PUT("/staff/:id", handlers.UpdateStaff)
-			cfgGrp.DELETE("/staff/:id", handlers.DeleteStaff)
+			// Removing a colleague is owner-only. A compromised manager
+			// account should not be able to lock the owner out.
+			cfgGrp.DELETE("/staff/:id",
+				middleware.RequireRank(middleware.RankOwner), handlers.DeleteStaff)
 
 			cfgGrp.GET("/audit", handlers.AuditLog)
 		}

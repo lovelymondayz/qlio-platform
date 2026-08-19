@@ -95,6 +95,71 @@ func RequireRole(roles ...string) gin.HandlerFunc {
 	}
 }
 
+// Role rank, highest first. §24 defines five roles; without an ordering every
+// non-owner role collapses into "some staff member", which is how a provider
+// ended up with the same reach as a receptionist.
+//
+//	owner        — full control, billing, delete the business
+//	manager      — all configuration, staff, services, counters
+//	receptionist — front desk: scan, check in, drive the queue, resolve bookings
+//	provider     — delivers the service: own queue actions, cannot reconfigure
+//	staff        — general helper: view the board, assist the queue
+var roleRank = map[string]int{
+	"owner":        50,
+	"manager":      40,
+	"receptionist": 30,
+	"provider":     20,
+	"staff":        10,
+}
+
+// RoleRank exposes the rank so handlers can compare two staff members, e.g. to
+// stop a manager from editing an owner.
+func RoleRank(role string) int { return roleRank[role] }
+
+// RequireRank gates an endpoint on the role hierarchy rather than an explicit
+// list, so adding a role does not mean auditing every route again.
+func RequireRank(min int) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if sup, _ := c.Get("is_super"); sup == true {
+			c.Next()
+			return
+		}
+		role, _ := c.Get("role")
+		rs, _ := role.(string)
+		if roleRank[rs] < min {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error":   "forbidden",
+				"message": "Your role cannot perform this action.",
+			})
+			return
+		}
+		c.Next()
+	}
+}
+
+// Rank thresholds used by the routes.
+const (
+	RankStaff        = 10
+	RankProvider     = 20
+	RankReceptionist = 30
+	RankManager      = 40
+	RankOwner        = 50
+)
+
+// Role returns the caller's role string.
+func Role(c *gin.Context) string {
+	v, _ := c.Get("role")
+	s, _ := v.(string)
+	return s
+}
+
+// StaffName returns the caller's display name, for audit metadata.
+func StaffName(c *gin.Context) string {
+	v, _ := c.Get("staff_name")
+	s, _ := v.(string)
+	return s
+}
+
 // BizID is the tenant scope for every authenticated query. Never trust a body field.
 func BizID(c *gin.Context) int64 {
 	v, _ := c.Get("business_id")

@@ -100,8 +100,30 @@ and keeps the queue honest: whoever actually arrived and checked in is in line.
 | Status guard | Check-in only proceeds from `pending_checkin` |
 | Booking lookup | Requires phone **AND** booking code, 5 per 15 min per IP |
 | Passwords | bcrypt (default cost) |
-| Role escalation | `UpdateStaff` refuses `owner`; `WHERE role <> 'owner'` |
+| Role escalation | `UpdateStaff` refuses `owner`; `WHERE role <> 'owner'`; rank ceiling stops peer promotion |
 | Rate limits | DB-backed sliding window: signup, login, booking, find |
+
+### Role hierarchy (§24)
+
+All five roles are ranked, so permissions are a threshold rather than a list.
+Before this, one gate (`RequireRole("owner","manager")`) guarded config and
+every other role collapsed into "some staff member" — a `provider` had exactly
+the same reach as a `receptionist`.
+
+| Role | Rank | Can do |
+|---|---|---|
+| owner | 50 | everything, plus deactivate staff |
+| manager | 40 | all config: services, counters, staff, schedule, analytics |
+| receptionist | 30 | scan, check in, queue, resolve + reschedule bookings |
+| provider | 20 | scan, check in, queue |
+| staff | 10 | view the board, move the queue |
+
+Enforced by `middleware.RequireRank(min)`. Two extra rules close the peer-escalation
+hole: a caller cannot create or assign a role at or above their own rank, and
+cannot edit a staff member at or above their own rank. So a manager can no longer
+mint a second manager, and only an owner can deactivate anyone.
+
+`is_super` bypasses every check — it is the platform operator, not a tenant role.
 
 ### Why phone-only lookup was rejected
 

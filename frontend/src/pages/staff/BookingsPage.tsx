@@ -49,8 +49,7 @@ export default function BookingsPage() {
   }
 
   // §31 calendar row actions. 'checkin' issues a queue ticket; the rest resolve
-  // a booking the customer has not arrived for. There is no 'reschedule' —
-  // staff close the booking and the customer books again.
+  // a booking the customer has not arrived for.
   const action = async (r: BookingRow, kind: 'checkin' | 'confirmed' | 'no_show' | 'cancelled') => {
     setMsg('')
     if (kind === 'cancelled' && !confirm(`Cancel ${r.customer_name}'s booking (${r.booking_code})?`)) return
@@ -63,6 +62,31 @@ export default function BookingsPage() {
         const label = kind === 'confirmed' ? 'confirmed' : kind === 'no_show' ? 'marked as no-show' : 'cancelled'
         setMsg(`${r.customer_name}'s booking ${label}.`)
       }
+      load()
+    } catch (e) { setMsg((e as ApiError).message) }
+  }
+
+  // §31 Reschedule — move an appointment instead of closing it and asking the
+  // customer to book again. The customer holds a receipt, not an account, so
+  // their open page is corrected over the WebSocket by the backend.
+  const reschedule = async (r: BookingRow) => {
+    setMsg('')
+    const date = prompt(
+      `New date for ${r.customer_name} (${r.booking_code})\nFormat YYYY-MM-DD — leave as-is to keep the same day.`,
+      r.service_date,
+    )
+    if (date === null) return
+    const time = prompt(`New time (HH:MM, 24-hour)`, r.scheduled_time || '09:00')
+    if (time === null) return
+    if (!/^\d{2}:\d{2}$/.test(time.trim())) {
+      setMsg('Please enter the time as HH:MM, for example 14:30.')
+      return
+    }
+    try {
+      await api.aPut(`/api/staff/bookings/${r.id}/reschedule`, {
+        date: date.trim(), time: time.trim(),
+      })
+      setMsg(`${r.customer_name} moved to ${prettyDate(date.trim())} at ${time.trim()}.`)
       load()
     } catch (e) { setMsg((e as ApiError).message) }
   }
@@ -146,6 +170,13 @@ export default function BookingsPage() {
                             className="rounded-lg border-2 border-slate-200 px-3 py-1.5 text-sm font-bold text-slate-500 hover:bg-slate-50"
                             title="Confirm this appointment" aria-label="Confirm appointment"
                             onClick={() => action(r, 'confirmed')}>✓ Confirm</button>
+                          {r.kind === 'appointment' && (
+                            <button
+                              className="rounded-lg border-2 border-sky-200 px-3 py-1.5 text-sm font-bold text-sky-700 hover:bg-sky-50"
+                              title="Move this appointment to another date or time"
+                              aria-label="Reschedule appointment"
+                              onClick={() => reschedule(r)}>🕓 Reschedule</button>
+                          )}
                           <button
                             className="rounded-lg border-2 border-amber-200 px-3 py-1.5 text-sm font-bold text-amber-700 hover:bg-amber-50"
                             title="Customer did not arrive" aria-label="Mark as no-show"

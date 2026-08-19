@@ -68,6 +68,7 @@ func CreateService(c *gin.Context) {
 		util.Server(c, err)
 		return
 	}
+	AuditID(c, "service.create", "service", id, map[string]any{"name": r.Name})
 	c.JSON(http.StatusCreated, gin.H{"id": id})
 }
 
@@ -98,6 +99,7 @@ func UpdateService(c *gin.Context) {
 		util.NotFound(c, "Service not found.")
 		return
 	}
+	Audit(c, "service.update", "service", util.ParamID(c), map[string]any{"name": r.Name})
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
@@ -114,6 +116,7 @@ func DeleteService(c *gin.Context) {
 		util.NotFound(c, "Service not found.")
 		return
 	}
+	Audit(c, "service.delete", "service", util.ParamID(c), nil)
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
@@ -175,6 +178,7 @@ func CreateCounter(c *gin.Context) {
 		util.Server(c, err)
 		return
 	}
+	AuditID(c, "counter.create", "counter", id, map[string]any{"name": r.Name, "kind": r.Kind})
 	c.JSON(http.StatusCreated, gin.H{"id": id})
 }
 
@@ -198,6 +202,7 @@ func UpdateCounter(c *gin.Context) {
 		util.NotFound(c, "Counter not found.")
 		return
 	}
+	Audit(c, "counter.update", "counter", util.ParamID(c), map[string]any{"name": r.Name, "is_active": r.IsActive})
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
@@ -209,6 +214,7 @@ func DeleteCounter(c *gin.Context) {
 		util.Server(c, err)
 		return
 	}
+	Audit(c, "counter.delete", "counter", util.ParamID(c), nil)
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
@@ -269,6 +275,14 @@ func CreateStaff(c *gin.Context) {
 		util.Fail(c, http.StatusBadRequest, "invalid_role", "Choose a valid role.")
 		return
 	}
+	// A manager must not be able to mint a peer with equal reach. Only an
+	// owner may appoint a manager; anyone below that can only create roles
+	// strictly beneath their own rank.
+	if middleware.RoleRank(r.Role) >= middleware.RoleRank(middleware.Role(c)) && !middleware.IsSuper(c) {
+		util.Fail(c, http.StatusForbidden, "role_too_high",
+			"You can only create roles below your own.")
+		return
+	}
 	var taken bool
 	db.Pool.QueryRow(c, `SELECT TRUE FROM staff WHERE lower(email)=$1`, r.Email).Scan(&taken)
 	if taken {
@@ -285,6 +299,8 @@ func CreateStaff(c *gin.Context) {
 		util.Server(c, err)
 		return
 	}
+	AuditID(c, "staff.create", "staff", id, map[string]any{
+		"email": r.Email, "name": r.Name, "role": r.Role})
 	c.JSON(http.StatusCreated, gin.H{"id": id})
 }
 
@@ -299,6 +315,21 @@ func UpdateStaff(c *gin.Context) {
 	// never allow role escalation to owner via this endpoint
 	if r.Role == "owner" || !validRoles[r.Role] {
 		util.Fail(c, http.StatusBadRequest, "invalid_role", "Choose a valid role.")
+		return
+	}
+	// Same rank ceiling as CreateStaff: a manager cannot promote someone into
+	// their own tier, and cannot edit a peer manager at all.
+	if middleware.RoleRank(r.Role) >= middleware.RoleRank(middleware.Role(c)) && !middleware.IsSuper(c) {
+		util.Fail(c, http.StatusForbidden, "role_too_high",
+			"You can only assign roles below your own.")
+		return
+	}
+	var targetRole string
+	db.Pool.QueryRow(c, `SELECT role FROM staff WHERE id=$1 AND business_id=$2`,
+		c.Param("id"), bizID).Scan(&targetRole)
+	if targetRole != "" && middleware.RoleRank(targetRole) >= middleware.RoleRank(middleware.Role(c)) && !middleware.IsSuper(c) {
+		util.Fail(c, http.StatusForbidden, "peer_locked",
+			"You cannot edit someone at or above your own role.")
 		return
 	}
 	res, err := db.Pool.Exec(c, `
@@ -322,6 +353,9 @@ func UpdateStaff(c *gin.Context) {
 		db.Pool.Exec(c, `UPDATE staff SET password_hash=$3 WHERE id=$1 AND business_id=$2`,
 			c.Param("id"), bizID, string(hash))
 	}
+	Audit(c, "staff.update", "staff", util.ParamID(c), map[string]any{
+		"name": r.Name, "role": r.Role, "is_active": r.IsActive,
+		"password_changed": r.Password != ""})
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
@@ -339,5 +373,6 @@ func DeleteStaff(c *gin.Context) {
 		util.NotFound(c, "Staff member not found.")
 		return
 	}
+	Audit(c, "staff.deactivate", "staff", util.ParamID(c), nil)
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }

@@ -126,6 +126,13 @@ func UpdateBusiness(c *gin.Context) {
 				updated_at = now()
 			WHERE business_id=$1`, bizID, r.SlotIntervalMin, r.AlmostTurnAhead)
 	}
+	Audit(c, "business.update", "business", nil, map[string]any{
+		"name":               r.Name,
+		"timezone":           r.Timezone,
+		"allow_appointments": r.AllowAppointments,
+		"allow_queue":        r.AllowQueue,
+		"allow_walkin":       r.AllowWalkin,
+	})
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
@@ -168,5 +175,6 @@ func UpdateSchedule(c *gin.Context) {
 			return
 		}
 	}
+	Audit(c, "schedule.update", "business", nil, map[string]any{"days": len(r.Days)})
 	c.JSON(http.StatusOK, gin.H{"schedule": listSchedule(c, bizID)})
 }

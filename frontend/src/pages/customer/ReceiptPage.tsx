@@ -5,6 +5,7 @@ import { api, ApiError } from '../../lib/api'
 import { money, prettyDate, waitText, receiptURL } from '../../lib/format'
 import { downloadTicket, shareTicket, downloadICS } from '../../lib/ticket'
 import { Spinner, ErrorBox, Alert, StatusChip, LiveDot } from '../../components/UI'
+import { YourTurnOverlay } from '../../components/YourTurnOverlay'
 import { useLiveSocket, usePolling, useBrowserNotify } from '../../hooks/useLive'
 import type { Receipt } from '../../types'
 
@@ -23,6 +24,8 @@ export default function ReceiptPage() {
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState('')
   const prevStatus = useRef<string>('')
+  // §16: full-screen takeover, armed on the transition into 'called'
+  const [showTurn, setShowTurn] = useState(false)
 
   const { granted, request: askNotify, notify } = useBrowserNotify()
 
@@ -54,9 +57,14 @@ export default function ReceiptPage() {
       if (r.status === 'called') {
         notify("🔔 It's your turn!", r.counter_name ? `Please go to ${r.counter_name}` : `Ticket ${r.ticket_number}`)
         try { navigator.vibrate?.([300, 120, 300]) } catch { /* noop */ }
+        setShowTurn(true)
       } else if (r.status === 'almost') {
         notify('Almost your turn', `You are next in line — ticket ${r.ticket_number}`)
       }
+    } else if (!prevStatus.current && r.status === 'called') {
+      // Opened the receipt while already being called (e.g. reopened from the
+      // gallery after the notification) — the takeover must still appear.
+      setShowTurn(true)
     }
     prevStatus.current = r.status
   }, [r?.status])
@@ -100,6 +108,14 @@ export default function ReceiptPage() {
 
   return (
     <div className="mx-auto min-h-screen max-w-lg px-4 pb-16 pt-6">
+      {showTurn && called && (
+        <YourTurnOverlay
+          receipt={r}
+          counterLabel={r.business.counter_label}
+          onDismiss={() => setShowTurn(false)}
+        />
+      )}
+
       {isNew && !closed && (
         <div className="mb-5 animate-slide-up rounded-3xl bg-emerald-50 p-5 text-center">
           <p className="text-3xl" aria-hidden>🎉</p>

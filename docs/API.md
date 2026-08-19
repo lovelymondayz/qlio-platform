@@ -128,3 +128,49 @@ acting staff member.
 **There is no customer self-cancel endpoint.** Cancelling requires contacting the
 business; the receipt surfaces their phone number.
 
+Requires **receptionist** rank or above.
+
+### PUT /api/staff/bookings/:id/reschedule
+
+Move an appointment to another date/time (§31) instead of closing it and asking the
+customer to book again.
+
+```json
+{ "date": "2026-08-21", "time": "14:30", "reason": "optional note" }
+```
+
+`date` may be omitted or empty to keep the current day and change only the time.
+`time` is business-local, 24-hour, and parsed in the tenant's own timezone.
+
+| Guard | Behaviour |
+|---|---|
+| Queue ticket | `not_an_appointment` — a ticket has no reserved time to move |
+| Already checked in / closed | `already_processed` |
+| New time already held | `slot_taken` — same clash rule as public booking, excluding this booking itself |
+| Cross-tenant id | `not_found` |
+
+On success the booking returns to `pending_checkin`, the change is written to
+`audit_log` as `booking.reschedule` (recording `from` and `to`), and the customer's
+open receipt is corrected over its WebSocket — they hold a receipt, not an account,
+so they never have to re-check anything.
+
+Requires **receptionist** rank or above.
+
+### Role ranks
+
+Staff routes are gated on a rank threshold, not a role list:
+
+| Role | Rank |
+|---|---|
+| owner | 50 |
+| manager | 40 |
+| receptionist | 30 |
+| provider | 20 |
+| staff | 10 |
+
+`403 forbidden` on failure. Analytics and all config need manager; scan/check-in need
+provider; queue actions are open to every staff role; deactivating staff is owner-only.
+A caller can never create or assign a role at or above their own rank (`role_too_high`),
+nor edit a colleague at or above it (`peer_locked`).
+
+

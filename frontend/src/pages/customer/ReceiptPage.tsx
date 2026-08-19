@@ -4,7 +4,7 @@ import QRCode from 'qrcode'
 import { api, ApiError } from '../../lib/api'
 import { money, prettyDate, waitText, receiptURL } from '../../lib/format'
 import { downloadTicket, shareTicket, downloadICS } from '../../lib/ticket'
-import { Spinner, ErrorBox, Alert, StatusChip, LiveDot, Modal } from '../../components/UI'
+import { Spinner, ErrorBox, Alert, StatusChip, LiveDot } from '../../components/UI'
 import { useLiveSocket, usePolling, useBrowserNotify } from '../../hooks/useLive'
 import type { Receipt } from '../../types'
 
@@ -22,7 +22,6 @@ export default function ReceiptPage() {
   const [qr, setQr] = useState('')
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState('')
-  const [confirmCancel, setConfirmCancel] = useState(false)
   const prevStatus = useRef<string>('')
 
   const { granted, request: askNotify, notify } = useBrowserNotify()
@@ -91,14 +90,13 @@ export default function ReceiptPage() {
     setBusy(false)
   }
 
-  const doCancel = async () => {
-    setBusy(true)
-    try {
-      await api.post(`/api/public/receipt/${token}/cancel`)
-      setConfirmCancel(false)
-      load()
-    } catch (e) { setSaved((e as ApiError).message) } finally { setBusy(false) }
-  }
+  // §30 Get Directions — prefer the business's own map link, otherwise search
+  // its address. Undefined when we have neither, so the button is not rendered.
+  const directionsHref = r.business.map_url
+    || (r.business.address
+        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+            `${r.business.name} ${r.business.address}`)}`
+        : undefined)
 
   return (
     <div className="mx-auto min-h-screen max-w-lg px-4 pb-16 pt-6">
@@ -216,13 +214,17 @@ export default function ReceiptPage() {
             Save it to your gallery and show the image at the counter — works without internet.
           </p>
 
+          {/* §30 — Get Directions, Share and Add to Calendar are all required.
+              Directions is no longer a fallback for the no-appointment case: an
+              appointment customer needs the address just as much. */}
           <div className="grid grid-cols-2 gap-3 pt-2">
             <button className="btn-secondary !text-base" disabled={busy} onClick={doShare}>↗ Share</button>
-            {r.scheduled_time
-              ? <button className="btn-secondary !text-base" onClick={() => downloadICS(r)}>📅 Add to Calendar</button>
-              : r.business.map_url
-                ? <a href={r.business.map_url} target="_blank" rel="noreferrer" className="btn-secondary !text-base">📍 Directions</a>
-                : <button className="btn-secondary !text-base" onClick={() => window.print()}>🖨 Print</button>}
+            {r.scheduled_time && (
+              <button className="btn-secondary !text-base" onClick={() => downloadICS(r)}>📅 Add to Calendar</button>
+            )}
+            {directionsHref
+              ? <a href={directionsHref} target="_blank" rel="noreferrer" className="btn-secondary !text-base">📍 Get Directions</a>
+              : <button className="btn-secondary !text-base" onClick={() => window.print()}>🖨 Print</button>}
           </div>
 
           {!granted && r.ticket_number && (
@@ -231,10 +233,14 @@ export default function ReceiptPage() {
             </button>
           )}
 
+          {/* Cancellation is deliberately NOT self-service. A booked slot is a
+              commitment; the customer must speak to the business so staff stay
+              in control of their schedule. Staff cancel from the queue board. */}
           {r.status === 'pending_checkin' && (
-            <button className="mt-2 w-full py-3 text-base font-semibold text-rose-600 hover:underline" onClick={() => setConfirmCancel(true)}>
-              Cancel this booking
-            </button>
+            <p className="mt-2 rounded-2xl bg-slate-50 px-4 py-3 text-center text-sm text-slate-500">
+              Need to change or cancel? Please contact {r.business.name}
+              {r.business.phone ? <> at <a href={`tel:${r.business.phone}`} className="font-semibold text-brand-600 underline">{r.business.phone}</a></> : ' directly'}.
+            </p>
           )}
         </div>
       )}
@@ -248,14 +254,6 @@ export default function ReceiptPage() {
       <p className="mt-8 text-center text-xs text-slate-400">
         Keep this page bookmarked — it is your ticket.
       </p>
-
-      <Modal open={confirmCancel} onClose={() => setConfirmCancel(false)} title="Cancel this booking?">
-        <p className="mb-6 text-lg text-slate-600">This cannot be undone. You would need to book again.</p>
-        <div className="flex gap-3">
-          <button className="btn-secondary flex-1" onClick={() => setConfirmCancel(false)}>Keep it</button>
-          <button className="btn-danger flex-1" disabled={busy} onClick={doCancel}>Yes, cancel</button>
-        </div>
-      </Modal>
     </div>
   )
 }

@@ -48,12 +48,20 @@ export default function BookingsPage() {
     }
   }
 
-  const action = async (r: BookingRow, kind: 'checkin' | 'cancel') => {
+  // §31 calendar row actions. 'checkin' issues a queue ticket; the rest resolve
+  // a booking the customer has not arrived for. There is no 'reschedule' —
+  // staff close the booking and the customer books again.
+  const action = async (r: BookingRow, kind: 'checkin' | 'confirmed' | 'no_show' | 'cancelled') => {
     setMsg('')
+    if (kind === 'cancelled' && !confirm(`Cancel ${r.customer_name}'s booking (${r.booking_code})?`)) return
     try {
       if (kind === 'checkin') {
         const res = await api.aPost<{ ticket_number: string }>('/api/staff/checkin', { code: r.booking_code, method: 'manual' })
         setMsg(`${r.customer_name} checked in — ticket ${res.ticket_number}.`)
+      } else {
+        await api.aPut(`/api/staff/bookings/${r.id}/status`, { status: kind })
+        const label = kind === 'confirmed' ? 'confirmed' : kind === 'no_show' ? 'marked as no-show' : 'cancelled'
+        setMsg(`${r.customer_name}'s booking ${label}.`)
       }
       load()
     } catch (e) { setMsg((e as ApiError).message) }
@@ -125,12 +133,28 @@ export default function BookingsPage() {
                       </span>
                       <span className="block text-xs text-slate-400">{r.booking_code} · {r.customer_phone}</span>
                     </span>
-                    <span className="flex items-center gap-2">
+                    <span className="flex flex-wrap items-center gap-2">
                       <StatusChip status={r.status} />
                       {r.status === 'pending_checkin' && (
-                        <button className="btn-primary !min-h-0 !px-4 !py-2 !text-sm" onClick={() => action(r, 'checkin')}>
-                          Check in
-                        </button>
+                        <>
+                          <button className="btn-primary !min-h-0 !px-4 !py-2 !text-sm" onClick={() => action(r, 'checkin')}>
+                            Check in
+                          </button>
+                          {/* §31 — resolve a booking nobody arrived for. Icon + title,
+                              never colour alone, so status stays readable (§36). */}
+                          <button
+                            className="rounded-lg border-2 border-slate-200 px-3 py-1.5 text-sm font-bold text-slate-500 hover:bg-slate-50"
+                            title="Confirm this appointment" aria-label="Confirm appointment"
+                            onClick={() => action(r, 'confirmed')}>✓ Confirm</button>
+                          <button
+                            className="rounded-lg border-2 border-amber-200 px-3 py-1.5 text-sm font-bold text-amber-700 hover:bg-amber-50"
+                            title="Customer did not arrive" aria-label="Mark as no-show"
+                            onClick={() => action(r, 'no_show')}>⊘ No show</button>
+                          <button
+                            className="rounded-lg border-2 border-rose-200 px-3 py-1.5 text-sm font-bold text-rose-600 hover:bg-rose-50"
+                            title="Cancel on the customer's behalf" aria-label="Cancel booking"
+                            onClick={() => action(r, 'cancelled')}>✕ Cancel</button>
+                        </>
                       )}
                       <a href={`/r/${r.receipt_token}`} target="_blank" rel="noreferrer"
                         className="rounded-lg p-2 text-slate-400 hover:bg-slate-100" title="View receipt">↗</a>

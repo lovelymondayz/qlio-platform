@@ -108,3 +108,23 @@ booking history. Counters are hard-deleted since tickets reference them nullably
 
 Clients should treat every event as "refetch", not as authoritative state. The payload is a
 hint for animation and notification; the REST endpoint is the source of truth.
+
+### PUT /api/staff/bookings/:id/status
+
+Resolve a booking that has not been checked in yet, from the appointment calendar (§31).
+
+```json
+{ "status": "confirmed" | "no_show" | "cancelled", "reason": "optional note" }
+```
+
+Only transitions **out of `pending_checkin`** are allowed. Anything already checked in or
+closed returns `already_processed` — use the queue board instead.
+
+Scoped by `business_id` from the JWT; another tenant's booking id reads as `not_found`
+rather than forbidden, so the endpoint never confirms it exists. Every call is written to
+`audit_log` as `booking_confirmed` / `booking_no_show` / `booking_cancelled` against the
+acting staff member.
+
+**There is no customer self-cancel endpoint.** Cancelling requires contacting the
+business; the receipt surfaces their phone number.
+

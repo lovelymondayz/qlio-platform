@@ -54,7 +54,10 @@ func main() {
 
 		pub.GET("/receipt/:token", handlers.GetReceipt)
 		pub.GET("/receipt/:token/ws", handlers.ReceiptWS)
-		pub.POST("/receipt/:token/cancel", handlers.CancelBooking)
+		// NOTE: there is deliberately no customer self-cancel endpoint. A booked
+		// slot is a commitment — the customer contacts the business, and staff
+		// cancel from the queue board (POST /api/staff/queue/:id/cancel), which
+		// is audit-logged against the staff member who performed it.
 		pub.POST("/find", handlers.FindBooking)
 	}
 
@@ -74,6 +77,10 @@ func main() {
 		st.GET("/me", handlers.Me)
 		st.GET("/dashboard", handlers.Dashboard)
 		st.GET("/bookings", handlers.ListBookings)
+		// Resolve a booking that has not been checked in yet, from the calendar:
+		// confirmed | no_show | cancelled. Receptionists need this (they answer
+		// the phone), so it sits with the general staff routes, not config.
+		st.PUT("/bookings/:id/status", handlers.BookingStatus)
 		st.GET("/analytics", handlers.Analytics)
 
 		// scanning + check-in: any staff role

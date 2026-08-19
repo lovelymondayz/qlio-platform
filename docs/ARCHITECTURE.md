@@ -31,7 +31,30 @@ businesses ──┬── staff ──── staff_schedule
 rate_hits    (global, IP-bucketed)
 ```
 
-### Ticket numbering
+## 5. Cancellation policy
+
+Customers **cannot** cancel their own booking. A booked slot is a commitment to the
+business, so cancelling requires contacting them — the receipt shows the business phone
+number instead of a cancel button.
+
+Staff resolve bookings in two places:
+
+| Situation | Where | Endpoint |
+|---|---|---|
+| Customer never arrived / phoned to cancel, **before check-in** | Appointment calendar | `PUT /api/staff/bookings/:id/status` → `confirmed` \| `no_show` \| `cancelled` |
+| Customer is already in the queue | Queue board | `POST /api/staff/queue/:id/cancel` |
+
+Both write to `audit_log` against the staff member who acted, so cancellations are always
+attributable. The booking endpoint only accepts transitions **out of `pending_checkin`**;
+anything already checked in or closed returns `already_processed`.
+
+There is deliberately **no reschedule**. Staff close the booking and the customer books
+again, which keeps slot-conflict logic in exactly one place (the booking path).
+
+If self-service cancellation is wanted later, it should be a **request → owner approves**
+flow rather than an immediate delete.
+
+## 6. Ticket numbering
 
 Per business, per day, per service prefix. Allocation is atomic:
 

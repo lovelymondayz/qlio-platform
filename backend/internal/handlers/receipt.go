@@ -157,29 +157,10 @@ func FindBooking(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"receipt_token": token, "receipt_url": "/r/" + token})
 }
 
-// POST /api/public/receipt/:token/cancel — customer self-cancel before check-in
-func CancelBooking(c *gin.Context) {
-	token := c.Param("token")
-	var bizID int64
-	var status string
-	err := db.Pool.QueryRow(c, `
-		SELECT business_id, status FROM bookings WHERE receipt_token=$1`, token).Scan(&bizID, &status)
-	if err != nil {
-		util.NotFound(c, "Receipt not found.")
-		return
-	}
-	if status != "pending_checkin" {
-		util.Fail(c, http.StatusConflict, "cannot_cancel", "This booking can no longer be cancelled online. Please contact the business.")
-		return
-	}
-	_, err = db.Pool.Exec(c, `
-		UPDATE bookings SET status='cancelled', cancelled_at=now(), updated_at=now()
-		WHERE receipt_token=$1`, token)
-	if err != nil {
-		util.Server(c, err)
-		return
-	}
-	PushQueue(bizID, "booking.cancelled", gin.H{"token": token})
-	PushReceipt(token, "receipt.updated", nil)
-	c.JSON(http.StatusOK, gin.H{"status": "cancelled"})
-}
+// Customer self-cancellation is deliberately not supported. A booked slot is a
+// commitment to the business, so cancelling requires talking to them: staff
+// cancel from the queue board via POST /api/staff/queue/:id/cancel, which is
+// audit-logged against the staff member who performed it.
+//
+// If self-service cancellation is ever wanted, it should go through an approval
+// step (customer requests → owner confirms) rather than an immediate delete.

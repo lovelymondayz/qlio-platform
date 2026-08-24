@@ -1,14 +1,19 @@
 #!/bin/bash
 # Qlio — manual update: pull latest, rebuild, recreate containers
-# Usage: ./update.sh [--force]
+# Usage: ./scripts/update.sh [--force]
 # Prerequisite: git push origin main (run this AFTER pushing)
+#
+# This script:
+# 1. Fetches latest from git
+# 2. Builds Docker images (--no-cache = fresh build)
+# 3. Recreates containers (--force-recreate = new containers from latest image)
 #
 # IMPORTANT: Always use this instead of "docker compose restart"
 # because restart keeps old containers running with stale images.
 
 set -e
 
-PROJECT_DIR="/root/qlio-platform"
+PROJECT_DIR="/root/hermes/qlio-platform"
 COMPOSE="docker compose"
 
 cd "$PROJECT_DIR"
@@ -41,7 +46,7 @@ echo "🚀 Recreating with latest image..."
 $COMPOSE up -d --force-recreate
 
 echo "⏳ Waiting for services..."
-sleep 8
+sleep 5
 
 echo ""
 echo "📊 Status:"
@@ -49,8 +54,8 @@ $COMPOSE ps
 
 echo ""
 echo "🏥 Health:"
-curl -fsS http://localhost:8087/api/health && echo "  ← backend OK" || echo "  ✗ backend FAILED"
-curl -fsS -o /dev/null -w "  frontend HTTP %{http_code}\n" http://localhost:3007/ || echo "  ✗ frontend FAILED"
+curl -sf http://localhost:8087/api/health > /dev/null && echo "  Backend:  ✅" || echo "  Backend:  ❌"
+curl -sf http://localhost:3007/ > /dev/null && echo "  Frontend: ✅" || echo "  Frontend: ❌"
 
 echo ""
 echo "✅ Done!"

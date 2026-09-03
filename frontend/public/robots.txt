@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://qlio-platform.arjism.com/sitemap.xml

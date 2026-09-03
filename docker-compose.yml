@@ -3,6 +3,8 @@ services:
     image: postgres:16-alpine
     container_name: qlio-db
     restart: unless-stopped
+    env_file:
+      - .env
     logging:
       driver: json-file
       options:
@@ -26,6 +28,8 @@ services:
     build: ./backend
     container_name: qlio-backend
     restart: unless-stopped
+    env_file:
+      - .env
     logging:
       driver: json-file
       options:
@@ -47,6 +51,8 @@ services:
     build: ./frontend
     container_name: qlio-frontend
     restart: unless-stopped
+    env_file:
+      - .env
     logging:
       driver: json-file
       options:

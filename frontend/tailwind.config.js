@@ -4,6 +4,39 @@ export default {
   theme: {
     extend: {
       colors: {
+        neutral: {
+          0: '#FFFFFF',
+          50: '#F8FAFC',
+          100: '#F1F5F9',
+          200: '#E2E8F0',
+          300: '#CBD5E1',
+          400: '#94A3B8',
+          500: '#64748B',
+          600: '#475569',
+          700: '#334155',
+          800: '#1E293B',
+          900: '#0F172A',
+        },
+        bg: '#F8FAFC',
+        surface: '#FFFFFF',
+        'surface-alt': '#F1F5F9',
+        border: '#E2E8F0',
+        'border-strong': '#CBD5E1',
+        text: '#1E293B',
+        'text-muted': '#64748B',
+        'text-subtle': '#94A3B8',
+        primary: '#6366F1',
+        'primary-hover': '#4F46E5',
+        'primary-active': '#4338CA',
+        'primary-subtle': '#EEF2FF',
+        success: '#22C55E',
+        'success-subtle': '#F0FDF4',
+        warning: '#F59E0B',
+        'warning-subtle': '#FFFBEB',
+        danger: '#EF4444',
+        'danger-subtle': '#FEF2F2',
+        info: '#3B82F6',
+        'info-subtle': '#EFF6FF',
         brand: {
           50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc',
           400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
@@ -13,7 +46,24 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
       },
-      borderRadius: { xl2: '1.25rem' },
+      borderRadius: {
+        sm: '0.375rem',
+        md: '0.5rem',
+        lg: '0.75rem',
+        xl: '1rem',
+        xl2: '1.25rem',
+        full: '9999px',
+      },
+      boxShadow: {
+        sm: '0 1px 2px rgba(15, 23, 42, 0.06)',
+        md: '0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04)',
+        lg: '0 8px 24px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.06)',
+      },
+      transitionDuration: {
+        fast: '120ms',
+        base: '200ms',
+        slow: '320ms',
+      },
       animation: {
         'pulse-slow': 'pulse 2.5s cubic-bezier(0.4,0,0.6,1) infinite',
         'slide-up': 'slideUp .3s ease-out',
@@ -25,5 +75,5 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [require('@tailwindcss/forms')],
 }

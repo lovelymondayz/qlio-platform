@@ -68,7 +68,7 @@ export default function AnalyticsPage() {
                     <div className="w-full bg-brand-500"
                       style={{ height: `${x.total ? (x.completed / x.total) * 100 : 0}%` }} />
                   </div>
-                  <span className="text-[10px] font-semibold text-slate-400">{shortDate(x.date)}</span>
+                  <span className="text- font-semibold text-slate-400">{shortDate(x.date)}</span>
                 </div>
               ))}
             </div>

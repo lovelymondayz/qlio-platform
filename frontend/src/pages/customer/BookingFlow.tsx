@@ -200,7 +200,7 @@ export default function BookingFlow() {
                   <button
                     key={d}
                     onClick={() => setDate(d)}
-                    className={`flex min-w-[72px] flex-col items-center rounded-2xl border-2 px-3 py-3 transition ${
+                    className={`flex min-w- flex-col items-center rounded-2xl border-2 px-3 py-3 transition ${
                       on ? 'border-brand-600 bg-brand-600 text-white' : 'border-slate-200 bg-white text-slate-700'
                     }`}
                   >
@@ -284,7 +284,7 @@ export default function BookingFlow() {
 
             <div>
               <label className="label" htmlFor="f-notes">Notes <span className="font-normal text-slate-400">(optional)</span></label>
-              <textarea id="f-notes" className="field min-h-[100px]" value={notes}
+              <textarea id="f-notes" className="field min-h-" value={notes}
                 onChange={(e) => setNotes(e.target.value)} placeholder="Anything the staff should know?" />
             </div>
           </div>

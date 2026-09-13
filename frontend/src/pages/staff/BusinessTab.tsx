@@ -104,7 +104,7 @@ export default function BusinessTab() {
           </div>
           <div>
             <label className="label">Address</label>
-            <textarea className="field min-h-[90px]" value={b.address} onChange={set('address')} />
+            <textarea className="field min-h-" value={b.address} onChange={set('address')} />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

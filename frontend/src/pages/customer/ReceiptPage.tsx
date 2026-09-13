@@ -125,7 +125,7 @@ export default function ReceiptPage() {
 
       {/* IT'S YOUR TURN — impossible to miss (§16) */}
       {called && (
-        <div className="mb-5 animate-ring-flash rounded-3xl bg-brand-600 p-8 text-center text-white shadow-2xl shadow-brand-600/40">
+        <div className="mb-5 animate-ring-flash rounded-3xl bg-brand-600 p-8 text-center text-white shadow-lg shadow-brand-600/40">
           <p className="text-2xl font-black">🔔 It's Your Turn!</p>
           <p className="ticket-num my-3 text-6xl">{r.ticket_number}</p>
           {r.counter_name && (
@@ -165,9 +165,9 @@ export default function ReceiptPage() {
         {!closed && (
           <div className="border-t-2 border-dashed border-slate-200 px-6 py-7">
             {qr ? (
-              <img src={qr} alt={`QR code for booking ${r.booking_code}`} className="mx-auto w-full max-w-[280px] rounded-2xl border-4 border-white shadow-md" />
+              <img src={qr} alt={`QR code for booking ${r.booking_code}`} className="mx-auto w-full max-w- rounded-2xl border-4 border-white shadow-md" />
             ) : (
-              <div className="mx-auto h-[280px] w-[280px] animate-pulse rounded-2xl bg-slate-100" />
+              <div className="mx-auto h- w- animate-pulse rounded-2xl bg-slate-100" />
             )}
             <p className="mt-5 text-center text-lg font-bold text-slate-700">Show this QR code when you arrive.</p>
             <p className="mt-1 text-center text-sm text-slate-400">Booking ID · {r.booking_code}</p>

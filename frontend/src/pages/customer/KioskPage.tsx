@@ -79,7 +79,7 @@ export default function KioskPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-brand-50 to-white">
+    <div className="flex min-h-screen flex-col bg-primary from-brand-50 to-white">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-8 py-10">
 
         {/* WELCOME */}

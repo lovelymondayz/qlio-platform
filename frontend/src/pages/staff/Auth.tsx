@@ -107,7 +107,7 @@ export function SignupPage() {
 
 function AuthShell({ title, sub, children }: { title: string; sub: string; children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-brand-50 to-slate-50 px-5 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-primary from-brand-50 to-slate-50 px-5 py-12">
       <div className="w-full max-w-md">
         <Link to="/" className="mb-8 block text-center text-2xl font-black text-brand-600">Qlio</Link>
         <div className="rounded-3xl bg-white p-8 shadow-xl">

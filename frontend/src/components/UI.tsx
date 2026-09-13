@@ -120,7 +120,7 @@ export function Modal({ open, onClose, title, children }: {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 sm:items-center sm:p-4" onClick={onClose}>
       <div
-        className="animate-slide-up w-full max-w-lg rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-3xl"
+        className="animate-slide-up w-full max-w-lg rounded-t-3xl bg-white p-6 shadow-lg sm:rounded-3xl"
         role="dialog" aria-modal="true" aria-label={title}
         onClick={(e) => e.stopPropagation()}
       >
